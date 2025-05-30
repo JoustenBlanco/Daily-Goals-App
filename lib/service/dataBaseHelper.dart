@@ -1,6 +1,6 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'tarea.dart';
+import '../models/tarea.dart';
 
 class DataBaseHelper {
   static final DataBaseHelper _instance = DataBaseHelper._internal();

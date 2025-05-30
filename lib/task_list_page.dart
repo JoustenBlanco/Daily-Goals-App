@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dataBaseHelper.dart';
-import 'tarea.dart';
+import 'service/dataBaseHelper.dart';
+import 'models/tarea.dart';
 import 'settings.dart';
-import 'themed_snackbar.dart'; // <-- Importa el nuevo archivo
+import 'widgets/themed_snackbar.dart';
 
 class Task {
   String title;
