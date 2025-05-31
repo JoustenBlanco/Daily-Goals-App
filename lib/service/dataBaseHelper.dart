@@ -24,8 +24,8 @@ class DataBaseHelper {
         return db.execute('''
           CREATE TABLE task(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT,
-            completada INTEGER DEFAULT 0
+            name TEXT,
+            complete INTEGER DEFAULT 0
           )
         ''');
       },

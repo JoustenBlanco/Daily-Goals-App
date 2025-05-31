@@ -29,7 +29,7 @@ class _TaskListPageState extends State<TaskListPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = context.watch<ThemeProvider>().isDarkMode;
-    final tasks = context.read<TaskProvider>().tasks;
+    final tasks = context.watch<TaskProvider>().tasks;
 
     List<Task> filteredTasks =
         tasks.where((task) {

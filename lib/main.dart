@@ -41,7 +41,9 @@ class _MainState extends State<MainApp> {
   void initState() {
     super.initState();
     context.read<ThemeProvider>().loadPreferences();
-    _checkSession;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkSession();
+    }); 
   }
 
   Future<void> _checkSession() async {
