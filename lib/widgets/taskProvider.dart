@@ -22,8 +22,10 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<void> loadTasks() async {
-    _tasks = await DataBaseHelper().getTasks(_userId!);
-    notifyListeners();
+    if (_userId != null){
+      _tasks = await DataBaseHelper().getTasks(_userId!);
+      notifyListeners();
+    } 
   }
 
   Future<void> addTask(String title) async {

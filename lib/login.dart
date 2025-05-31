@@ -30,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text,
       );
       if (response.user != null) {
-        context.read<AuthProvider>().setAuthentication(true,response.user!.id);
+        context.read<AuthProvider>().checkAuthentication();
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const TaskListPage()),
           (route) => false,

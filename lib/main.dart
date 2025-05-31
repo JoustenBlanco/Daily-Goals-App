@@ -20,17 +20,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
-          create: (_) => TaskProvider(),
-          update: (_, auth, task) {
-            task ??= TaskProvider();
-            final userId = auth.userId;
-            if (userId != null) {
-              task.setUser(userId);
-            }
-            return task;
-          },
-        ),
+        ChangeNotifierProvider(create: (_) => TaskProvider()),
       ],
       child: const MainApp(),
     ),
@@ -57,10 +47,7 @@ class _MainState extends State<MainApp> {
   }
 
   Future<void> _checkSession() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session != null){
-      context.read<AuthProvider>().setAuthentication(true, session.user.id);
-    }
+    context.read<AuthProvider>().checkAuthentication();
     setState(() {
       _isCheckingSession = false;
     });
