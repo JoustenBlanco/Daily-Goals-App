@@ -1,105 +1,45 @@
 import 'package:flutter/material.dart';
-import 'service/dataBaseHelper.dart';
-import 'models/tarea.dart';
-import 'settings.dart';
-import 'widgets/themed_snackbar.dart';
-
-class Task {
-  String title;
-  bool isCompleted;
-
-  Task({required this.title, this.isCompleted = false});
-}
+import 'package:provider/provider.dart';
+import 'package:tasks_list/widgets/themed_snackbar.dart';
+import 'package:tasks_list/service/dataBaseHelper.dart';
+import 'package:tasks_list/widgets/themeProvider.dart';
+import 'package:tasks_list/widgets/taskProvider.dart';
+import 'package:tasks_list/models/task.dart';
+import 'package:tasks_list/settings.dart';
 
 class TaskListPage extends StatefulWidget {
-  final bool isDarkMode;
-  final bool isAutoDarkMode;
-  final ValueChanged<bool> onThemeChanged;
-  final ValueChanged<bool> onAutoThemeChanged;
-  final Future<void> Function() onOpenSettings;
 
-  const TaskListPage({
-    Key? key,
-    required this.isDarkMode,
-    required this.isAutoDarkMode,
-    required this.onThemeChanged,
-    required this.onAutoThemeChanged,
-    required this.onOpenSettings,
-  }) : super(key: key);
+  const TaskListPage({ Key? key }) : super(key: key);
 
   @override
   State<TaskListPage> createState() => _TaskListPageState();
 }
 
 class _TaskListPageState extends State<TaskListPage> {
-  List<Tarea> tasks = [];
   String searchQuery = '';
   final FocusNode _searchFocusNode = FocusNode();
-  late bool isDark;
-  late bool isAutoDark;
 
   @override
   void initState() {
     super.initState();
-    _loadTasks();
-    isDark = widget.isDarkMode;
-    isAutoDark = widget.isAutoDarkMode;
-  }
-
-  @override
-  void didUpdateWidget(covariant TaskListPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (isDark != widget.isDarkMode || isAutoDark != widget.isAutoDarkMode) {
-      setState(() {
-        isDark = widget.isDarkMode;
-        isAutoDark = widget.isAutoDarkMode;
-      });
-    }
-  }
-
-  Future<void> _loadTasks() async {
-    final loadedTasks = await DataBaseHelper().getTareas();
-    setState(() {
-      tasks = loadedTasks;
-    });
-  }
-
-  Future<void> addTask(String title) async {
-    final tarea = Tarea(nombre: title, completada: 0);
-    await DataBaseHelper().insertTarea(tarea);
-    await _loadTasks();
-  }
-
-  Future<void> toggleTask(Tarea tarea) async {
-    tarea.completada = tarea.completada == 1 ? 0 : 1;
-    await DataBaseHelper().updateTarea(tarea);
-    await _loadTasks();
-  }
-
-  Future<void> deleteTask(Tarea tarea) async {
-    await DataBaseHelper().deleteTarea(tarea.id!);
-    await _loadTasks();
-  }
-
-  Future<void> editTask(Tarea tarea, String newTitle) async {
-    tarea.nombre = newTitle;
-    await DataBaseHelper().updateTarea(tarea);
-    await _loadTasks();
+    context.read<TaskProvider>().loadTasks();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    final tasks = context.read<TaskProvider>().tasks;
 
-    List<Tarea> filteredTasks =
+    List<Task> filteredTasks =
         tasks.where((task) {
-          return task.nombre.toLowerCase().contains(searchQuery.toLowerCase());
+          return task.name.toLowerCase().contains(searchQuery.toLowerCase());
         }).toList();
 
-    List<Tarea> pendingTasks =
-        filteredTasks.where((task) => task.completada == 0).toList();
-    List<Tarea> completedTasks =
-        filteredTasks.where((task) => task.completada == 1).toList();
+    List<Task> pendingTasks =
+        filteredTasks.where((task) => task.complete == 0).toList();
+    List<Task> completedTasks =
+        filteredTasks.where((task) => task.complete == 1).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -171,28 +111,9 @@ class _TaskListPageState extends State<TaskListPage> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-          builder: (context) => Settings(
-            isDarkMode: isDark,
-            isAutoDarkMode: isAutoDark,
-            onThemeChanged: (value) {
-              setState(() {
-            isDark = value;
-              });
-              widget.onThemeChanged(value);
-            },
-            onAutoThemeChanged: (value) {
-              setState(() {
-            isAutoDark = value;
-              });
-              widget.onAutoThemeChanged(value);
-            },
-          ),
+          builder: (context) => Settings(),
             ),
           );
-          setState(() {
-            isDark = widget.isDarkMode;
-            isAutoDark = widget.isAutoDarkMode;
-          });
         },
           ),
         ],
@@ -373,7 +294,7 @@ class _TaskListPageState extends State<TaskListPage> {
     );
   }
 
-  Widget buildTaskItem(Tarea tarea, bool isCompleted, ThemeData theme, bool isDark) {
+  Widget buildTaskItem(Task task, bool isCompleted, ThemeData theme, bool isDark) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -393,25 +314,25 @@ class _TaskListPageState extends State<TaskListPage> {
       ),
       child: ListTile(
         leading: Checkbox(
-          value: tarea.completada == 1,
+          value: task.complete == 1,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
           activeColor: theme.colorScheme.secondary,
           checkColor: Colors.white,
           onChanged: (value) {
-            toggleTask(tarea);
+            context.read<TaskProvider>().toggleTask(task);
           },
         ),
         title: GestureDetector(
-          onLongPress: () => showEditTaskDialog(tarea),
+          onLongPress: () => showEditTaskDialog(task),
           child: Text(
-            tarea.nombre,
+            task.name,
             style: TextStyle(
               fontSize: 16,
-              decoration: tarea.completada == 1 ? TextDecoration.lineThrough : null,
-              color: tarea.completada == 1
+              decoration: task.complete == 1 ? TextDecoration.lineThrough : null,
+              color: task.complete == 1
                   ? theme.disabledColor
                   : theme.colorScheme.onSurface,
-              fontWeight: tarea.completada == 1 ? FontWeight.normal : FontWeight.w600,
+              fontWeight: task.complete == 1 ? FontWeight.normal : FontWeight.w600,
             ),
           ),
         ),
@@ -421,12 +342,12 @@ class _TaskListPageState extends State<TaskListPage> {
             IconButton(
               icon: Icon(Icons.edit, color: theme.colorScheme.primary),
               tooltip: 'Editar',
-              onPressed: () => showEditTaskDialog(tarea),
+              onPressed: () => showEditTaskDialog(task),
             ),
             IconButton(
               icon: Icon(Icons.delete_outline, color: theme.colorScheme.secondary),
               tooltip: 'Eliminar',
-              onPressed: () => _confirmDeleteTask(tarea),
+              onPressed: () => _confirmDeleteTask(task),
             ),
           ],
         ),
@@ -434,12 +355,12 @@ class _TaskListPageState extends State<TaskListPage> {
     );
   }
 
-  Future<void> _confirmDeleteTask(Tarea tarea) async {
+  Future<void> _confirmDeleteTask(Task task) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Eliminar tarea'),
-        content: Text('¿Deseas eliminar la tarea "${tarea.nombre}"?'),
+        title: Text('Eliminar task'),
+        content: Text('¿Deseas eliminar la tarea "${task.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -453,12 +374,8 @@ class _TaskListPageState extends State<TaskListPage> {
       ),
     );
     if (confirm == true) {
-      await deleteTask(tarea);
-      showThemedSnackBar(
-        context,
-        'Tarea eliminada.',
-        isDark,
-      );
+      await context.read<TaskProvider>().deleteTask(task);
+      showThemedSnackBar(context, 'Tarea eliminada.');
     }
   }
 
@@ -475,7 +392,7 @@ class _TaskListPageState extends State<TaskListPage> {
           decoration: const InputDecoration(hintText: 'Título de la tarea'),
           onSubmitted: (value) async {
             if (value.isNotEmpty) {
-              await addTask(value);
+              await context.read<TaskProvider>().addTask(value);
               Navigator.pop(context);
             }
           },
@@ -490,7 +407,7 @@ class _TaskListPageState extends State<TaskListPage> {
           ElevatedButton(
             onPressed: () async {
               if (controller.text.isNotEmpty) {
-                await addTask(controller.text);
+                await context.read<TaskProvider>().addTask(controller.text);
                 Navigator.pop(context);
               }
             },
@@ -501,8 +418,8 @@ class _TaskListPageState extends State<TaskListPage> {
     );
   }
 
-  void showEditTaskDialog(Tarea tarea) {
-    final controller = TextEditingController(text: tarea.nombre);
+  void showEditTaskDialog(Task task) {
+    final controller = TextEditingController(text: task.name);
 
     showDialog(
       context: context,
@@ -513,8 +430,8 @@ class _TaskListPageState extends State<TaskListPage> {
           controller: controller,
           decoration: const InputDecoration(hintText: 'Nuevo título'),
           onSubmitted: (value) async {
-            if (value.isNotEmpty && value != tarea.nombre) {
-              await editTask(tarea, value);
+            if (value.isNotEmpty && value != task.name) {
+              await context.read<TaskProvider>().editTask(task, value);
               Navigator.pop(context);
             }
           },
@@ -528,8 +445,8 @@ class _TaskListPageState extends State<TaskListPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (controller.text.isNotEmpty && controller.text != tarea.nombre) {
-                await editTask(tarea, controller.text);
+              if (controller.text.isNotEmpty && controller.text != task.name) {
+                await context.read<TaskProvider>().editTask(task, controller.text);
               }
               Navigator.pop(context);
             },
@@ -543,13 +460,9 @@ class _TaskListPageState extends State<TaskListPage> {
   // --- Funcionalidades de la botomppBar ---
 
   void _deleteCompletedTasks() async {
-    final completedCount = tasks.where((task) => task.completada == 1).length;
+    final completedCount = context.read<TaskProvider>().tasks.where((task) => task.complete == 1).length;
     if (completedCount == 0) {
-      showThemedSnackBar(
-        context,
-        'No hay tareas completadas para eliminar.',
-        isDark,
-      );
+      showThemedSnackBar(context, 'No hay tareas completadas para eliminar.');
       return;
     }
     final confirm = await showDialog<bool>(
@@ -571,37 +484,25 @@ class _TaskListPageState extends State<TaskListPage> {
           ),
     );
     if (confirm == true) {
-      for (var tarea in tasks.where((t) => t.completada == 1).toList()) {
-        await DataBaseHelper().deleteTarea(tarea.id!);
+      for (var task in context.read<TaskProvider>().tasks.where((t) => t.complete == 1).toList()) {
+        await DataBaseHelper().deleteTask(task.id!);
       }
-      await _loadTasks();
-      showThemedSnackBar(
-        context,
-        'Tareas completadas eliminadas.',
-        isDark,
-      );
+      await context.read<TaskProvider>().loadTasks();
+      showThemedSnackBar(context, 'Tareas completadas eliminadas.');
     }
   }
 
   void _completeAllPendingTasks() async {
-    final pending = tasks.where((task) => task.completada == 0).toList();
+    final pending = context.read<TaskProvider>().tasks.where((task) => task.complete == 0).toList();
     if (pending.isEmpty) {
-      showThemedSnackBar(
-        context,
-        'No hay tareas pendientes para completar.',
-        isDark,
-      );
+      showThemedSnackBar(context, 'No hay tareas pendientes para completar.');
       return;
     }
-    for (var tarea in pending) {
-      tarea.completada = 1;
-      await DataBaseHelper().updateTarea(tarea);
+    for (var task in pending) {
+      task.complete = 1;
+      await DataBaseHelper().updateTask(task);
     }
-    await _loadTasks();
-    showThemedSnackBar(
-      context,
-      '¡Todas las tareas marcadas como completadas!',
-      isDark,
-    );
+    await context.read<TaskProvider>().loadTasks();
+    showThemedSnackBar(context, '¡Todas las tareas marcadas como completadas!');
   }
 }

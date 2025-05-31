@@ -1,10 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tasks_list/widgets/themeProvider.dart';
+import 'package:tasks_list/widgets/authProvider.dart';
+import 'package:tasks_list/widgets/taskProvider.dart';
 import 'package:tasks_list/task_list_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'settings.dart';
+import 'package:tasks_list/login.dart';
 
-void main() {
-  runApp(const MainApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await Supabase.initialize(
+    url: 'https://qypqofmhbfwqduecblfv.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5cHFvZm1oYmZ3cWR1ZWNibGZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4NjIwNTIsImV4cCI6MjA1ODQzODA1Mn0.WF3oSkSl5FjyuMdM0uLCqX70VckO5mbAxdmz-s8nkRY',
+  );
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => TaskProvider()),
+      ],
+      child: const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatefulWidget {
@@ -15,84 +35,36 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainState extends State<MainApp> {
-  bool _isDarkMode = false;
-  bool _isAutoDarkMode = false;
+  bool _isCheckingSession = false;
 
   @override
   void initState() {
     super.initState();
-    _loadPreferences();
+    context.read<ThemeProvider>().loadPreferences();
+    _checkSession;
   }
 
-  Future<void> _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool auto = prefs.getBool('autoDarkMode') ?? false;
-    bool dark = prefs.getBool('darkMode') ?? false;
+  Future<void> _checkSession() async {
+    final session = Supabase.instance.client.auth.currentSession;
+    context.read<AuthProvider>()..setAuthentication(session != null);
     setState(() {
-      _isAutoDarkMode = auto;
-      _isDarkMode = auto ? _getAutoDarkMode() : dark;
+      _isCheckingSession = false;
     });
-  }
-
-  Future<void> _savePreferences({bool? darkMode, bool? autoDarkMode}) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (darkMode != null) prefs.setBool('darkMode', darkMode);
-    if (autoDarkMode != null) prefs.setBool('autoDarkMode', autoDarkMode);
-  }
-
-  void _toggleDarkMode(bool value) {
-    setState(() {
-      _isDarkMode = value;
-      _isAutoDarkMode = false;
-    });
-    _savePreferences(darkMode: value, autoDarkMode: false);
-  }
-
-  void _toggleAutoDarkMode(bool value) {
-    setState(() {
-      _isAutoDarkMode = value;
-      _isDarkMode = value ? _getAutoDarkMode() : _isDarkMode;
-    });
-    _savePreferences(autoDarkMode: value);
-    if (value) {
-      setState(() {
-        _isDarkMode = _getAutoDarkMode();
-      });
-    }
-  }
-
-  bool _getAutoDarkMode() {
-    final hour = DateTime.now().hour;
-    return (hour >= 18 || hour < 6);
-  }
-
-  Future<void> _openSettings() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Settings(
-          isDarkMode: _isDarkMode,
-          isAutoDarkMode: _isAutoDarkMode,
-          onThemeChanged: _toggleDarkMode,
-          onAutoThemeChanged: _toggleAutoDarkMode,
-        ),
-      ),
-    );
-    await _loadPreferences();
-  }
-
-  Future<bool> getSwitchState(String key, {bool defaultValue = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(key) ?? defaultValue;
-  }
-
-  Future<void> setSwitchState(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
   }
 
   @override
   Widget build(BuildContext context) {
+    final _isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final _isAuthenticated = context.watch<AuthProvider>().isAuthenticated;
+    
+    if (_isCheckingSession) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return MaterialApp(
       title: 'Lista de Tareas',
       debugShowCheckedModeBanner: false,
@@ -139,13 +111,8 @@ class _MainState extends State<MainApp> {
                 foregroundColor: Colors.white,
               ),
             ),
-      home: TaskListPage(
-        isDarkMode: _isDarkMode,
-        isAutoDarkMode: _isAutoDarkMode,
-        onThemeChanged: _toggleDarkMode,
-        onAutoThemeChanged: _toggleAutoDarkMode,
-        onOpenSettings: _openSettings,
-      ),
+      home: _isAuthenticated ? TaskListPage() : LoginPage(),
     );
   }
-}
+}      
+

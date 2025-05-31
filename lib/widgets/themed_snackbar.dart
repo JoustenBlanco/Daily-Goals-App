@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:tasks_list/widgets/themeProvider.dart';
 
-void showThemedSnackBar(BuildContext context, String message, bool isDark) {
+void showThemedSnackBar(BuildContext context, String message) {
   final theme = Theme.of(context);
+  final isDark = context.watch<ThemeProvider>().isDarkMode;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
