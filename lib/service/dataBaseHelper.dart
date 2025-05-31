@@ -11,57 +11,70 @@ class DataBaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('task.db');
+    _database = await _initDB('tasks.db');
     return _database!;
   }
 
   Future<Database> _initDB(String filePath) async {
     String path = join(await getDatabasesPath(), filePath);
+
+    //await deleteDatabase(path);
+
     return await openDatabase(
       path,
       version: 1,
       onCreate: (db, version) {
         return db.execute('''
-          CREATE TABLE task(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+          CREATE TABLE tasks(
+            id TEXT PRIMARY KEY,
             name TEXT,
-            complete INTEGER DEFAULT 0
+            complete INTEGER DEFAULT 0,
+            user_id TEXT
           )
         ''');
       },
     );
   }
 
-  Future<int> insertTask(Task tarea) async {
+  Future<int> insertTask(Task task) async {
     final db = await database;
     return db.insert(
-      'task',
-      tarea.toMap()
+      'tasks',
+      task.toMap()
     );
   }
 
-  Future<List<Task>> getTasks() async {
+  Future<List<Task>> getTasks(String userId) async {
     final db = await database;
-    final task = await db.query('task');
-    return task.map((tarea) => Task.fromMap(tarea)).toList();
+    final task = await db.query(
+      'tasks',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+    return task.map((task) => Task.fromMap(task)).toList();
   }
 
-  Future<int> deleteTask(int id) async {
+  Future<int> deleteTask(String id) async {
     final db = await database;
     return db.delete(
-      'task',
+      'tasks',
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
-  Future<int> updateTask(Task tarea) async {
+  Future<void> clearTasks(String userId) async {
+    final db = await database;
+    await db.delete('tasks', where: 'user_id = ?', whereArgs: [userId]);
+  }
+
+  Future<int> updateTask(Task task) async {
     final db = await database;
     return db.update(
-      'task',
-      tarea.toMap(),
+      'tasks',
+      task.toMap(),
       where: 'id = ?',
-      whereArgs: [tarea.id],
+      whereArgs: [task.id],
     );
   }
 }

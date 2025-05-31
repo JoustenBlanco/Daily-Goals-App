@@ -17,12 +17,11 @@ class _SettingsState extends State<Settings> {
   Future<void> _signOut(BuildContext context) async {
     try {
       await Supabase.instance.client.auth.signOut();
-      context.read<AuthProvider>().setAuthentication(false);
-      
+      context.read<AuthProvider>().setAuthentication(false,null);
       Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (route) => false,
-    );
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al cerrar sesión')),

@@ -20,7 +20,17 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
+          create: (_) => TaskProvider(),
+          update: (_, auth, task) {
+            task ??= TaskProvider();
+            final userId = auth.userId;
+            if (userId != null) {
+              task.setUser(userId);
+            }
+            return task;
+          },
+        ),
       ],
       child: const MainApp(),
     ),
@@ -35,7 +45,7 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainState extends State<MainApp> {
-  bool _isCheckingSession = false;
+  bool _isCheckingSession = true;
 
   @override
   void initState() {
@@ -48,7 +58,9 @@ class _MainState extends State<MainApp> {
 
   Future<void> _checkSession() async {
     final session = Supabase.instance.client.auth.currentSession;
-    context.read<AuthProvider>()..setAuthentication(session != null);
+    if (session != null){
+      context.read<AuthProvider>().setAuthentication(true, session.user.id);
+    }
     setState(() {
       _isCheckingSession = false;
     });

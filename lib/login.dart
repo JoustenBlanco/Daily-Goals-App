@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tasks_list/task_list_page.dart';
 import 'package:tasks_list/widgets/authProvider.dart';
 import 'package:tasks_list/signup.dart';
 
@@ -29,7 +30,11 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text,
       );
       if (response.user != null) {
-        context.read<AuthProvider>().setAuthentication(true);
+        context.read<AuthProvider>().setAuthentication(true,response.user!.id);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const TaskListPage()),
+          (route) => false,
+        );
       }
     } on AuthException catch (e) {
       setState(() => _error = e.message);
