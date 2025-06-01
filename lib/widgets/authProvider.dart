@@ -76,9 +76,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> switchToSession(String sessionString) async {
+  Future<bool> switchToSession(String sessionString) async {
     final client = Supabase.instance.client;
-    await client.auth.recoverSession(sessionString);
-    await checkAuthentication();
+    final response = await client.auth.recoverSession(sessionString);
+
+    if (response.session == null || response.user == null) {
+      return false;
+    } else {
+      await checkAuthentication();
+      return true;
+    }
   }
 }

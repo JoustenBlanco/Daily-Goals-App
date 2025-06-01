@@ -82,7 +82,11 @@ class _SettingsState extends State<Settings> {
               ),
               onTap: () async {
                 try {
-                  await authProvider.switchToSession(sessionString);
+                  if (!await authProvider.switchToSession(sessionString)){
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                    );
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Sesión cambiada'))
                   );
