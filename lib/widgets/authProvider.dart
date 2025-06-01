@@ -27,29 +27,39 @@ class AuthProvider extends ChangeNotifier {
     }else{
       _userId = null;
       _isAuthenticated = false;
-
+      _currentSessionString = null;
     }
     notifyListeners();
   }
 
   Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
     _isAuthenticated = false;
     _userId = null;
     _currentSessionString = null;
+    _savedSessions = [];
+    await prefs.setStringList('sessions', _savedSessions);
     notifyListeners();
   }
 
   Future<void> deleteSession(String sessionString) async {
     final prefs = await SharedPreferences.getInstance();
-    _savedSessions.removeWhere((s) => s == sessionString);
+    _savedSessions.removeWhere((s){ 
+      Map<String, dynamic> sessionData = jsonDecode(s);
+      Map<String, dynamic> currentSessionData = jsonDecode(sessionString);
+      return sessionData['user']?['email'] == currentSessionData['user']?['email'];
+    });
     await prefs.setStringList('sessions', _savedSessions);
   }
-
 
   Future<void> _saveSessionString(String sessionString) async {
     final prefs = await SharedPreferences.getInstance();
 
-    final index = _savedSessions.indexWhere((s) => s == sessionString);
+    final index = _savedSessions.indexWhere((s){ 
+      Map<String, dynamic> sessionData = jsonDecode(s);
+      Map<String, dynamic> currentSessionData = jsonDecode(sessionString);
+      return sessionData['user']?['email'] == currentSessionData['user']?['email'];
+    });
     if (index != -1) {
       _savedSessions[index] = sessionString; 
     } else {

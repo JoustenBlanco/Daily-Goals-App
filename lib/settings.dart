@@ -20,7 +20,7 @@ class _SettingsState extends State<Settings> {
   Future<void> _signOut(BuildContext context) async {
     try {
       await Supabase.instance.client.auth.signOut();
-      context.read<AuthProvider>().checkAuthentication();
+      context.read<AuthProvider>().logout();
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginPage()),
         (route) => false,
