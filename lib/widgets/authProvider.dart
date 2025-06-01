@@ -51,9 +51,9 @@ class AuthProvider extends ChangeNotifier {
 
     final index = _savedSessions.indexWhere((s) => s == sessionString);
     if (index != -1) {
-      _savedSessions[index] = sessionString; // Reemplaza
+      _savedSessions[index] = sessionString; 
     } else {
-      _savedSessions.add(sessionString);     // Si no existe, lo agrega
+      _savedSessions.add(sessionString);
     }
 
     await prefs.setStringList('sessions', _savedSessions);
@@ -69,6 +69,6 @@ class AuthProvider extends ChangeNotifier {
   Future<void> switchToSession(String sessionString) async {
     final client = Supabase.instance.client;
     await client.auth.recoverSession(sessionString);
-    checkAuthentication();
+    await checkAuthentication();
   }
 }

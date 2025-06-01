@@ -1,16 +1,18 @@
 class Task {
-  final String? id;
+  String? id;
   String name;
   int complete;
   String userId;
   bool remote;
+  bool to_delete;
 
   Task({
     this.id,
     required this.name,
     this.complete = 0,
     required this.userId,
-    this.remote = false
+    this.remote = false,
+    this.to_delete = false
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,8 @@ class Task {
       'name': name,
       'complete': complete,
       'user_id': userId,
+      'remote': remote ? 1 : 0,
+      'to_delete': to_delete ? 1 : 0,
     };
   }
 
@@ -48,6 +52,8 @@ class Task {
       name: map['name'],
       complete: map['complete'] ?? 0,
       userId: map['user_id'] ?? 0,
+      remote: (map['remote'] ?? 0) == 1,
+      to_delete: (map['to_delete'] ?? 0) == 1,
     );
   }
 }

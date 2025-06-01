@@ -20,7 +20,17 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
+          create: (_) => TaskProvider(),
+          update: (_, auth, task) {
+            task ??= TaskProvider();
+            final userId = auth.userId;
+            if (userId != null) {
+              task.setUser(userId).then((_) => task!.init());
+            }
+            return task;
+          },
+        ),
       ],
       child: const MainApp(),
     ),

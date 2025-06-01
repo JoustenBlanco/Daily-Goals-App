@@ -1,6 +1,6 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import '../models/task.dart';
+import 'package:tasks_list/models/task.dart';
 
 class DataBaseHelper {
   static final DataBaseHelper _instance = DataBaseHelper._internal();
@@ -29,7 +29,9 @@ class DataBaseHelper {
             id TEXT PRIMARY KEY,
             name TEXT,
             complete INTEGER DEFAULT 0,
-            user_id TEXT
+            user_id TEXT,
+            remote INTEGER DEFAULT 0,
+            to_delete INTEGER DEFAULT 0
           )
         ''');
       },
@@ -44,12 +46,22 @@ class DataBaseHelper {
     );
   }
 
+  Future<List<Task>> getDeleteTasks(String userId) async {
+    final db = await database;
+    final task = await db.query(
+      'tasks',
+      where: 'user_id = ? AND to_delete = ?',
+      whereArgs: [userId, 1],
+    );
+    return task.map((task) => Task.fromMap(task)).toList();
+  }
+
   Future<List<Task>> getTasks(String userId) async {
     final db = await database;
     final task = await db.query(
       'tasks',
-      where: 'user_id = ?',
-      whereArgs: [userId],
+      where: 'user_id = ? AND to_delete = ?',
+      whereArgs: [userId, 0],
     );
     return task.map((task) => Task.fromMap(task)).toList();
   }

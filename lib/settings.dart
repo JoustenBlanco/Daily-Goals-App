@@ -83,11 +83,6 @@ class _SettingsState extends State<Settings> {
               onTap: () async {
                 try {
                   await authProvider.switchToSession(sessionString);
-                  Map<String, dynamic> sessionData = jsonDecode(sessionString);
-                  final userId = sessionData['user']?['id'];
-                  if (userId != null){
-                    context.read<TaskProvider>().setUser(userId!);
-                  }
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Sesión cambiada'))
                   );
