@@ -14,16 +14,51 @@ class _SignupPageState extends State<SignupPage> {
   String? _error;
   bool _loading = false;
 
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(email);
+  }
+
+  bool _isValidPassword(String password) {
+    return password.length >= 6;
+  }
+
   Future<void> _signup() async {
     setState(() {
       _loading = true;
       _error = null;
     });
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    // Validaciones locales
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _error = 'Por favor, completa todos los campos.';
+        _loading = false;
+      });
+      return;
+    }
+    if (!_isValidEmail(email)) {
+      setState(() {
+        _error = 'Ingresa un correo válido.';
+        _loading = false;
+      });
+      return;
+    }
+    if (!_isValidPassword(password)) {
+      setState(() {
+        _error = 'La contraseña debe tener al menos 6 caracteres.';
+        _loading = false;
+      });
+      return;
+    }
+
     try {
       final response = await Supabase.instance.client.auth.signUp(
-        email: _emailController.text,
-        password: _passwordController.text,
+        email: email,
+        password: password,
       );
       if (response.user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -32,7 +67,19 @@ class _SignupPageState extends State<SignupPage> {
         Navigator.pop(context);
       }
     } on AuthException catch (e) {
-      setState(() => _error = e.message);
+      // Validación si la cuenta ya existe
+      final msg = e.message.toLowerCase();
+      if (msg.contains('user already registered') ||
+          msg.contains('already registered') ||
+          msg.contains('already exists')) {
+        setState(() => _error = 'La cuenta ya existe. Intenta iniciar sesión.');
+      } else if (msg.contains('invalid email')) {
+        setState(() => _error = 'Correo inválido.');
+      } else if (msg.contains('password')) {
+        setState(() => _error = 'La contraseña no cumple los requisitos.');
+      } else {
+        setState(() => _error = e.message);
+      }
     } catch (e) {
       setState(() => _error = 'Error desconocido');
     } finally {
